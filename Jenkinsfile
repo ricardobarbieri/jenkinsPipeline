@@ -8,38 +8,39 @@ pipeline {
         }
         stage('Setup Directories') {
             steps {
-                sh 'mkdir -p data models'
+                bat 'mkdir data models'
             }
         }
         stage('Setup Environment') {
             steps {
-                sh 'pip3 install -r requirements.txt'
+                bat 'pip install -r requirements.txt'
             }
         }
         stage('Data Collection') {
             steps {
-                sh 'python3 scripts/data_collection.py'
+                bat 'python scripts\\data_collection.py'
             }
         }
         stage('Data Preprocessing') {
             steps {
-                sh 'python3 scripts/preprocessing.py'
+                bat 'python scripts\\preprocessing.py'
             }
         }
         stage('Model Training') {
             steps {
-                sh 'python3 scripts/train_model.py'
+                bat 'python scripts\\train_model.py'
             }
         }
         stage('Model Evaluation') {
             steps {
-                sh 'python3 scripts/evaluate_model.py'
+                bat 'python scripts\\evaluate_model.py'
             }
         }
         stage('Deploy Model') {
             steps {
-                // Nota: 'nohup' é mantido, mas considere Docker para produção
-                sh 'nohup python3 scripts/deploy_model.py &'
+                // Nota: 'start /B' inicia o processo em segundo plano no Windows.
+                // Considere Docker ou um servidor WSGI para produção.
+                bat 'start /B python scripts\\deploy_model.py'
             }
         }
     }
