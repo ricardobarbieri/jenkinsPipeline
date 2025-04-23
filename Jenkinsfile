@@ -7,6 +7,13 @@ pipeline {
     }
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                // Limpa o workspace antes de iniciar o build
+                cleanWs()
+            }
+        }
+
         stage('Checkout') {
             steps {
                 git branch: "${params.BRANCH_NAME}", url: 'https://github.com/ricardobarbieri/jenkinsPipeline.git'
@@ -25,15 +32,20 @@ pipeline {
 
         stage('Setup Environment') {
             steps {
+                // Depuração: Mostra versões e conteúdo do requirements.txt
                 bat 'python --version'
                 bat 'pip --version'
-                bat 'type requirements.txt'
-                bat 'python -m venv venv'
-                bat 'venv\\Scripts\\activate.bat'
-                bat 'python -m pip install --upgrade pip'
+                bat 'type requirements.txt || echo "requirements.txt não encontrado"'
+
+                // Cria e ativa o ambiente virtual, atualiza pip e instala dependências
                 script {
                     try {
-                        bat 'pip install -r requirements.txt --verbose'
+                        bat '''
+                            python -m venv venv
+                            venv\\Scripts\\activate.bat
+                            python -m pip install --upgrade pip
+                            pip install -r requirements.txt --verbose
+                        '''
                     } catch (Exception e) {
                         echo "Erro ao instalar dependências: ${e}"
                         error "Falha na instalação do requirements.txt"
@@ -46,7 +58,10 @@ pipeline {
             steps {
                 script {
                     if (fileExists('scripts/data_collection.py')) {
-                        bat 'venv\\Scripts\\python scripts/data_collection.py'
+                        bat '''
+                            venv\\Scripts\\activate.bat
+                            python scripts/data_collection.py
+                        '''
                         echo 'Coletando dados...'
                     } else {
                         echo 'Script scripts/data_collection.py não encontrado. Pulando etapa...'
@@ -59,7 +74,10 @@ pipeline {
             steps {
                 script {
                     if (fileExists('scripts/preprocessing.py')) {
-                        bat 'venv\\Scripts\\python scripts/preprocessing.py'
+                        bat '''
+                            venv\\Scripts\\activate.bat
+                            python scripts/preprocessing.py
+                        '''
                         echo 'Pré-processando dados...'
                     } else {
                         echo 'Script scripts/preprocessing.py não encontrado. Pulando etapa...'
@@ -72,7 +90,10 @@ pipeline {
             steps {
                 script {
                     if (fileExists('scripts/train_model.py')) {
-                        bat "venv\\Scripts\\python scripts/train_model.py --model-type ${params.MODEL_TYPE}"
+                        bat """
+                            venv\\Scripts\\activate.bat
+                            python scripts/train_model.py --model-type ${params.MODEL_TYPE}
+                        """
                         echo "Treinando modelo (${params.MODEL_TYPE})..."
                     } else {
                         echo 'Script scripts/train_model.py não encontrado. Pulando etapa...'
@@ -85,7 +106,10 @@ pipeline {
             steps {
                 script {
                     if (fileExists('scripts/evaluate_model.py')) {
-                        bat 'venv\\Scripts\\python scripts/evaluate_model.py'
+                        bat '''
+                            venv\\Scripts\\activate.bat
+                            python scripts/evaluate_model.py
+                        '''
                         echo 'Avaliando modelo...'
                     } else {
                         echo 'Script scripts/evaluate_model.py não encontrado. Pulando etapa...'
@@ -98,7 +122,10 @@ pipeline {
             steps {
                 script {
                     if (fileExists('scripts/deploy_model.py')) {
-                        bat 'venv\\Scripts\\python scripts/deploy_model.py'
+                        bat '''
+                            venv\\Scripts\\activate.bat
+                            python scripts/deploy_model.py
+                        '''
                         echo 'Fazendo deploy do modelo...'
                     } else {
                         echo 'Script scripts/deploy_model.py não encontrado. Pulando etapa...'
