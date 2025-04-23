@@ -1,36 +1,31 @@
 pipeline {
-    agent any // Executa no nó padrão do Jenkins (Windows, conforme logs)
+    agent any 
 
     stages {
         stage('Checkout') {
             steps {
-                // Faz checkout do repositório Git
                 git branch: 'main', url: 'https://github.com/ricardobarbieri/jenkinsPipeline.git'
             }
         }
 
         stage('Setup Directories') {
             steps {
-                // Cria diretórios "data" e "models"
                 bat 'mkdir data models'
             }
         }
 
         stage('Setup Environment') {
             steps {
-                // Comandos de depuração antes da instalação
-                bat 'python --version' // Mostra a versão do Python
-                bat 'pip --version' // Mostra a versão do pip
-                bat 'type requirements.txt' // Mostra o conteúdo do requirements.txt
+                bat 'python --version'
+                bat 'pip --version' 
+                bat 'type requirements.txt' 
 
-                // Cria e ativa um ambiente virtual
+
                 bat 'python -m venv venv'
                 bat 'venv\\Scripts\\activate.bat'
 
-                // Atualiza o pip no ambiente virtual
                 bat 'python -m pip install --upgrade pip'
 
-                // Instala os pacotes com log detalhado e tratamento de erro
                 script {
                     try {
                         bat 'pip install -r requirements.txt --verbose'
@@ -44,7 +39,6 @@ pipeline {
 
         stage('Data Collection') {
             steps {
-                // Verifica se o script existe antes de rodar
                 script {
                     if (fileExists('scripts/data_collection.py')) {
                         bat 'venv\\Scripts\\python scripts/data_collection.py'
@@ -99,7 +93,7 @@ pipeline {
             steps {
                 script {
                     if (fileExists('scripts/deploy_model.py')) {
-                        // Evita o uso de start /B, roda diretamente no ambiente virtual
+
                         bat 'venv\\Scripts\\python scripts/deploy_model.py'
                         echo 'Fazendo deploy do modelo...'
                     } else {
