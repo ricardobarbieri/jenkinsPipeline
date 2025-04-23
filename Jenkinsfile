@@ -1,31 +1,36 @@
 pipeline {
-    agent any 
+    agent any
+
+    parameters {
+        string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Branch para build')
+        choice(name: 'MODEL_TYPE', choices: ['logistic_regression', 'random_forest'], description: 'Tipo de modelo')
+    }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/ricardobarbieri/jenkinsPipeline.git'
+                git branch: "${params.BRANCH_NAME}", url: 'https://github.com/ricardobarbieri/jenkinsPipeline.git'
             }
         }
 
         stage('Setup Directories') {
             steps {
-                bat 'mkdir data models'
+                bat '''
+                    rmdir /S /Q data || exit 0
+                    rmdir /S /Q models || exit 0
+                    mkdir data models
+                '''
             }
         }
 
         stage('Setup Environment') {
             steps {
                 bat 'python --version'
-                bat 'pip --version' 
-                bat 'type requirements.txt' 
-
-
+                bat 'pip --version'
+                bat 'type requirements.txt'
                 bat 'python -m venv venv'
                 bat 'venv\\Scripts\\activate.bat'
-
                 bat 'python -m pip install --upgrade pip'
-
                 script {
                     try {
                         bat 'pip install -r requirements.txt --verbose'
@@ -67,8 +72,8 @@ pipeline {
             steps {
                 script {
                     if (fileExists('scripts/train_model.py')) {
-                        bat 'venv\\Scripts\\python scripts/train_model.py'
-                        echo 'Treinando modelo...'
+                        bat "venv\\Scripts\\python scripts/train_model.py --model-type ${params.MODEL_TYPE}"
+                        echo "Treinando modelo (${params.MODEL_TYPE})..."
                     } else {
                         echo 'Script scripts/train_model.py não encontrado. Pulando etapa...'
                     }
@@ -93,7 +98,6 @@ pipeline {
             steps {
                 script {
                     if (fileExists('scripts/deploy_model.py')) {
-
                         bat 'venv\\Scripts\\python scripts/deploy_model.py'
                         echo 'Fazendo deploy do modelo...'
                     } else {
